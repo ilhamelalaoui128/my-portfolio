@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('portfolio-theme') === 'dark') {
+            document.documentElement.classList.add('dark')
+          }
+        } catch (e) {}
+      })()
+    </script>
+    <style>
+      html {
+        background-color: #fff9f7;
+        color-scheme: light;
+      }
+      html.dark {
+        background-color: #101012;
+        color-scheme: dark;
+      }
+      body {
+        background-color: #fff9f7;
+      }
+      html.dark body {
+        background-color: #101012;
+      }
+    </style>
+    <meta
+      name="description"
+      content="Ilham El-Alaoui — Technicienne Spécialisée en Développement Digital. Portfolio, projets React et recherche de stage à Oujda, Maroc."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Ilham El-Alaoui — Développeuse Web" />
+    <meta
+      property="og:description"
+      content="Portfolio professionnel — Projets React, Supabase, Laravel. En recherche de stage à Oujda, Maroc."
+    />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:image" content="/photo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/photo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Syne:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>Ilham El-Alaoui — Développeuse Web</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
