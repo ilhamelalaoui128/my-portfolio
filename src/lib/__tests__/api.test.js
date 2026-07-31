@@ -50,9 +50,12 @@ const mockState = vi.hoisted(() => {
 })
 
 vi.mock('../supabaseClient', () => ({
+  supabaseUrl: 'https://project.supabase.co',
   get isSupabaseConfigured() { return mockState.configured },
   supabase: mockState.supabase,
 }))
+
+vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
 
 vi.stubGlobal('crypto', {
   randomUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),
@@ -263,8 +266,12 @@ describe('signInAdmin / signOutAdmin / getSession', () => {
   it('signInAdmin calls supabase.auth.signInWithPassword', async () => {
     const { signInAdmin } = await import('../api')
     const { supabase: s } = await import('../supabaseClient')
-    await signInAdmin('admin@test.com', 'password')
-    expect(s.auth.signInWithPassword).toHaveBeenCalledWith({ email: 'admin@test.com', password: 'password' })
+    await signInAdmin('admin@test.com', 'password', 'token-123')
+    expect(s.auth.signInWithPassword).toHaveBeenCalledWith({
+      email: 'admin@test.com',
+      password: 'password',
+      options: { captchaToken: 'token-123' },
+    })
   })
 
   it('signInAdmin throws on error', async () => {

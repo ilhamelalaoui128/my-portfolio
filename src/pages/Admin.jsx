@@ -6,12 +6,14 @@ import {
   FolderKanban, Plus, Save, Trash2, Upload,
 } from 'lucide-react'
 import {
-  fetchProjects, getSession, signInAdmin, signOutAdmin,
+  fetchProjects,
   createProject, updateProject, deleteProject, uploadImage,
 } from '../lib/api'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
+import { useAdminAuth } from '../context/AdminAuthContext'
 import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
+import TurnstileCaptcha, { TURNSTILE_SITE_KEY } from '../components/TurnstileCaptcha'
 import AdminDashboard from './AdminDashboard'
 import AdminMessages from './AdminMessages'
 import AdminExperiences from './AdminExperiences'
@@ -35,9 +37,11 @@ export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentTab = searchParams.get('tab') || 'dashboard'
   const setActiveTab = (tab) => setSearchParams({ tab })
-  const [session, setSession] = useState(null)
-  const [checking, setChecking] = useState(true)
+  const { session, checking, signIn, signOut } = useAdminAuth()
   const [login, setLogin] = useState({ email: '', password: '' })
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaKey, setCaptchaKey] = useState(0)
+  const [captchaVisible, setCaptchaVisible] = useState(false)
   const [projects, setProjects] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -56,24 +60,19 @@ export default function Admin() {
   )
 
   useEffect(() => {
-    getSession().then((s) => {
-      setSession(s)
-      setChecking(false)
-    })
-  }, [])
-
-  useEffect(() => {
     if (session) loadProjects()
   }, [session])
 
   useEffect(() => {
     if (searchParams.get('action') === 'logout') {
-      signOutAdmin().then(() => {
-        setSession(null)
+      signOut().then(() => {
         setForm(emptyForm)
         setEditingId(null)
         setImageFile(null)
         setImagePreview('')
+        setCaptchaToken('')
+        setCaptchaKey((k) => k + 1)
+        setCaptchaVisible(false)
         setSearchParams({}, { replace: true })
       })
     }
@@ -95,12 +94,17 @@ export default function Admin() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setCaptchaVisible(true)
+      return
+    }
     setLoading(true)
     try {
-      const s = await signInAdmin(login.email, login.password)
-      setSession(s)
+      await signIn(login.email, login.password, captchaToken)
     } catch {
       toast.error('Identifiants incorrects.')
+      setCaptchaToken('')
+      setCaptchaKey((k) => k + 1)
     } finally {
       setLoading(false)
     }
@@ -218,12 +222,20 @@ export default function Admin() {
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-light px-5 pt-20 dark:bg-surface-dark">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-5 bg-surface-light px-4 py-6 dark:bg-surface-dark">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
+        >
+          <ArrowLeft size={14} />
+          Retour au site
+        </Link>
+
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-md"
+          className="w-full max-w-sm sm:max-w-md"
         >
           <form
             onSubmit={handleLogin}
@@ -231,29 +243,21 @@ export default function Admin() {
           >
             <div className="h-1 bg-gradient-to-r from-accent-dark via-accent to-accent-light" aria-hidden="true" />
 
-            <div className="p-8 md:p-10">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
-              >
-                <ArrowLeft size={14} />
-                Retour au site
-              </Link>
-
-              <div className="mx-auto mb-6 mt-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10">
-                <Shield size={28} className="text-accent" strokeWidth={1.75} />
+            <div className="p-6 sm:p-8">
+              <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10">
+                <Shield size={24} className="text-accent" strokeWidth={1.75} />
               </div>
 
-              <h1 className="text-center font-display text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-center font-display text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
                 Administration
               </h1>
-              <p className="mt-2 text-center text-sm text-muted-light dark:text-muted-dark">
+              <p className="mt-1.5 text-center text-sm text-muted-light dark:text-muted-dark">
                 Accédez à votre espace d'administration.
               </p>
 
-              <div className="mt-8 space-y-5">
+              <div className="mt-6 space-y-4">
                 <div>
-                  <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-gray-800 dark:text-gray-200">
+                  <label htmlFor="admin-email" className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
                     Email
                   </label>
                   <div className="flex items-center rounded-xl border border-accent/20 bg-[#FFF8F5] shadow-sm shadow-accent/5 transition duration-200 focus-within:border-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-accent/20 dark:border-accent/25 dark:bg-[#18181C] dark:focus-within:border-accent dark:focus-within:bg-[#1E1E22] dark:focus-within:ring-accent/25">
@@ -262,12 +266,12 @@ export default function Admin() {
                       id="admin-email" type="email" placeholder="vous@email.com" required
                       value={login.email}
                       onChange={(e) => setLogin({ ...login, email: e.target.value })}
-                      className="w-full bg-transparent py-3 pl-3 pr-4 text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                      className="w-full bg-transparent py-2.5 pl-3 pr-4 text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-gray-800 dark:text-gray-200">
+                  <label htmlFor="admin-password" className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
                     Mot de passe
                   </label>
                   <div className="flex items-center rounded-xl border border-accent/20 bg-[#FFF8F5] shadow-sm shadow-accent/5 transition duration-200 focus-within:border-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-accent/20 dark:border-accent/25 dark:bg-[#18181C] dark:focus-within:border-accent dark:focus-within:bg-[#1E1E22] dark:focus-within:ring-accent/25">
@@ -276,14 +280,30 @@ export default function Admin() {
                       id="admin-password" type="password" placeholder="••••••••" required
                       value={login.password}
                       onChange={(e) => setLogin({ ...login, password: e.target.value })}
-                      className="w-full bg-transparent py-3 pl-3 pr-4 text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                      className="w-full bg-transparent py-2.5 pl-3 pr-4 text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
                     />
                   </div>
                 </div>
+
+                {captchaVisible && TURNSTILE_SITE_KEY && (
+                  <div>
+                    <TurnstileCaptcha
+                      key={captchaKey}
+                      onToken={setCaptchaToken}
+                      onExpired={() => setCaptchaToken('')}
+                      onError={() => setCaptchaToken('')}
+                    />
+                    {!captchaToken && (
+                      <p className="mt-1.5 text-center text-xs text-muted-light dark:text-muted-dark">
+                        Résolvez le captcha pour continuer.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button type="submit" disabled={loading}
-                className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 font-semibold text-white shadow-md shadow-accent/20 transition hover:bg-accent-dark disabled:opacity-60"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent py-2.5 font-semibold text-white shadow-md shadow-accent/20 transition hover:bg-accent-dark disabled:opacity-60"
               >
                 {loading ? (
                   <>

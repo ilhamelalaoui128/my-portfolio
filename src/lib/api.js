@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabaseClient'
+import { supabase, supabaseUrl, isSupabaseConfigured } from './supabaseClient'
 
 export const fallbackProfile = {
   name: 'Ilham',
@@ -78,6 +78,28 @@ const fallbackExperiences = [
 
 let supabaseUnavailable = false
 let liveSourceDetected = false
+let wakeupPromise = null
+
+async function ensureSupabaseReady() {
+  if (supabaseUnavailable) return false
+  if (!wakeupPromise) {
+    wakeupPromise = (async () => {
+      const deadline = Date.now() + 15000
+      while (Date.now() < deadline) {
+        try {
+          const res = await fetch(`${supabaseUrl}/auth/v1/health`)
+          if (res.ok) return true
+        } catch {}
+        await new Promise((r) => setTimeout(r, 3000))
+      }
+      return false
+    })().then((ok) => {
+      if (!ok) supabaseUnavailable = true
+      return ok
+    })
+  }
+  return wakeupPromise
+}
 
 export function getProfileSource() {
   return liveSourceDetected ? 'supabase' : 'fallback'
@@ -131,6 +153,7 @@ function getDemoMessages() {
 
 export async function fetchProjects() {
   if (!isSupabaseConfigured || supabaseUnavailable) return getDemoProjects()
+  if (!(await ensureSupabaseReady())) return getDemoProjects()
 
   const { data, error } = await supabase
     .from('projects')
@@ -143,6 +166,9 @@ export async function fetchProjects() {
 
 export async function fetchProjectById(id) {
   if (!isSupabaseConfigured || supabaseUnavailable) {
+    return getDemoProjects().find((p) => p.id === id) || null
+  }
+  if (!(await ensureSupabaseReady())) {
     return getDemoProjects().find((p) => p.id === id) || null
   }
 
@@ -161,6 +187,7 @@ export async function fetchProjectById(id) {
 
 export async function fetchExperiences() {
   if (!isSupabaseConfigured || supabaseUnavailable) return getDemoExperiences()
+  if (!(await ensureSupabaseReady())) return getDemoExperiences()
 
   const { data, error } = await supabase
     .from('experiences')
@@ -186,6 +213,9 @@ export async function submitContactMessage({ name, email, message }) {
     await new Promise((r) => setTimeout(r, 800))
     return { success: true, demo: true }
   }
+  if (!(await ensureSupabaseReady())) {
+    throw new Error('Supabase indisponible, réessayez dans un instant.')
+  }
 
   const { error } = await supabase.from('messages').insert({
     name: name.trim(),
@@ -197,9 +227,16 @@ export async function submitContactMessage({ name, email, message }) {
   return { success: true }
 }
 
-export async function signInAdmin(email, password) {
+export async function signInAdmin(email, password, captchaToken) {
   if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (!(await ensureSupabaseReady())) {
+    throw new Error('Supabase indisponible, réessayez dans un instant.')
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken },
+  })
   if (error) throw error
   return data
 }
@@ -291,6 +328,7 @@ export async function deleteProject(id) {
 
 export async function fetchMessages() {
   if (!isSupabaseConfigured || supabaseUnavailable) return getDemoMessages()
+  if (!(await ensureSupabaseReady())) return getDemoMessages()
 
   const { data, error } = await supabase
     .from('messages')
@@ -401,6 +439,7 @@ export async function updateProfile(profileData) {
 
 async function fetchFromSettings(key, fallback) {
   if (!isSupabaseConfigured || supabaseUnavailable) return getDemoSettings()[key]
+  if (!(await ensureSupabaseReady())) return getDemoSettings()[key] ?? fallback
   try {
     const { data, error } = await supabase.from('settings').select('value').eq('key', key).single()
     if (!error && data) { liveSourceDetected = true; return data.value }

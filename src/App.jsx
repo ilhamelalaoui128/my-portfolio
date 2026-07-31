@@ -10,6 +10,7 @@ import LoadingScreen from './components/LoadingScreen'
 import { ThemeProvider } from './hooks/useTheme'
 import { useAppLoader } from './hooks/useAppLoader'
 import { PortfolioDataProvider, usePortfolioData } from './context/PortfolioDataContext'
+import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext'
 import BackToTop from './components/BackToTop'
 
 function ScrollToHash() {
@@ -46,13 +47,17 @@ function DocumentTitle() {
 function AppContent() {
   const { isReady, progress } = useAppLoader()
   const { ready } = usePortfolioData()
+  const { pathname } = useLocation()
+  const { session, checking } = useAdminAuth()
 
   const showContent = ready && isReady
+  const isAdmin = pathname === '/admin'
+  const showChrome = showContent && !(isAdmin && (!session || checking))
 
   return (
     <>
       <div className="min-h-screen bg-surface-light dark:bg-surface-dark">
-        {showContent && <Navbar />}
+        {showChrome && <Navbar />}
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -60,7 +65,7 @@ function AppContent() {
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
-        {showContent && <Footer />}
+        {showChrome && <Footer />}
       </div>
       <BackToTop />
 
@@ -83,8 +88,10 @@ export default function App() {
           Aller au contenu
         </a>
         <PortfolioDataProvider>
-          <DocumentTitle />
-          <AppContent />
+          <AdminAuthProvider>
+            <DocumentTitle />
+            <AppContent />
+          </AdminAuthProvider>
         </PortfolioDataProvider>
       </BrowserRouter>
     </ThemeProvider>

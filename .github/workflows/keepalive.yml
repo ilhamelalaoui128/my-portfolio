@@ -1,0 +1,15 @@
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase health endpoint
+        run: |
+          curl -fsS -o /dev/null -w "Supabase health: %{http_code}\n" \
+            "https://mctiewwjpnxxpnkyqiit.supabase.co/auth/v1/health"

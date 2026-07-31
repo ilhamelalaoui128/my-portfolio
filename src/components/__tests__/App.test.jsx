@@ -22,6 +22,12 @@ vi.mock('../../context/PortfolioDataContext', () => ({
   PortfolioDataProvider: ({ children }) => children,
 }))
 
+const mockAdminAuth = vi.hoisted(() => ({ session: null, checking: false }))
+vi.mock('../../context/AdminAuthContext', () => ({
+  useAdminAuth: () => mockAdminAuth,
+  AdminAuthProvider: ({ children }) => children,
+}))
+
 vi.mock('../../hooks/useTheme', () => ({
   ThemeProvider: ({ children }) => children,
   useTheme: () => ({ isDark: false }),
@@ -45,6 +51,8 @@ describe('App', () => {
     mockAppLoader.isReady = false
     mockAppLoader.progress = 50
     mockContext.ready = false
+    mockAdminAuth.session = null
+    mockAdminAuth.checking = false
     window.scrollTo = vi.fn()
   })
 
