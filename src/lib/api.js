@@ -257,36 +257,26 @@ export async function getSession() {
   return data.session
 }
 
-export async function sendPasswordResetCode(email, captchaToken) {
+export async function setRecoveryCode(code) {
   if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
   if (!(await ensureSupabaseReady())) {
     throw new Error('Supabase indisponible, réessayez dans un instant.')
   }
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false, captchaToken },
-  })
+  const { error } = await supabase.rpc('set_recovery_code', { new_code: code })
   if (error) throw error
   return true
 }
 
-export async function verifyPasswordResetCode(email, token, captchaToken) {
+export async function recoverPassword(code, newPassword) {
   if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token,
-    type: 'email',
-    options: { captchaToken },
+  if (!(await ensureSupabaseReady())) {
+    throw new Error('Supabase indisponible, réessayez dans un instant.')
+  }
+  const { error } = await supabase.rpc('recover_admin_password', {
+    recovery_code: code,
+    new_password: newPassword,
   })
   if (error) throw error
-  return data.session
-}
-
-export async function updateAdminPassword(password) {
-  if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
-  const { error } = await supabase.auth.updateUser({ password })
-  if (error) throw error
-  await supabase.auth.signOut()
   return true
 }
 

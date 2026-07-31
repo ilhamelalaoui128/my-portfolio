@@ -34,6 +34,7 @@ const mockState = vi.hoisted(() => {
   }
   const uploadFn = vi.fn().mockResolvedValue({ data: { path: 'test.png' }, error: null })
   const getPublicUrlFn = vi.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/test.png' } })
+  const rpcFn = vi.fn().mockResolvedValue({ data: true, error: null })
   const storageObj = {
     from: vi.fn(() => ({ upload: uploadFn, getPublicUrl: getPublicUrlFn })),
   }
@@ -47,8 +48,9 @@ const mockState = vi.hoisted(() => {
     authObj,
     uploadFn,
     getPublicUrlFn,
+    rpcFn,
     storageObj,
-    supabase: { from: fromFn, auth: authObj, storage: storageObj },
+    supabase: { from: fromFn, auth: authObj, storage: storageObj, rpc: rpcFn },
   }
 })
 
@@ -73,6 +75,7 @@ beforeEach(() => {
   mockState.setConfigured(true)
   mockState.setQueryResult({ data: [], error: null })
   mockState.fromFn.mockClear()
+  mockState.rpcFn.mockClear()
   mockState.authObj.signInWithPassword.mockClear()
   mockState.authObj.signInWithOtp.mockClear()
   mockState.authObj.verifyOtp.mockClear()
@@ -341,47 +344,51 @@ describe('signInAdmin / signOutAdmin / getSession', () => {
   })
 })
 
-describe('password reset (sendPasswordResetCode / verifyPasswordResetCode / updateAdminPassword)', () => {
-  it('sendPasswordResetCode calls signInWithOtp without creating a user', async () => {
-    const { sendPasswordResetCode } = await import('../api')
+describe('password recovery (setRecoveryCode / recoverPassword)', () => {
+  it('setRecoveryCode calls rpc set_recovery_code with the code', async () => {
+    const { setRecoveryCode } = await import('../api')
     const { supabase: s } = await import('../supabaseClient')
-    await sendPasswordResetCode('admin@test.com', 'captcha-123')
-    expect(s.auth.signInWithOtp).toHaveBeenCalledWith({
-      email: 'admin@test.com',
-      options: { shouldCreateUser: false, captchaToken: 'captcha-123' },
-    })
+    await setRecoveryCode('A1B2C3D4')
+    expect(s.rpc).toHaveBeenCalledWith('set_recovery_code', { new_code: 'A1B2C3D4' })
   })
 
-  it('sendPasswordResetCode throws when not configured', async () => {
+  it('setRecoveryCode throws when not configured', async () => {
     mockState.setConfigured(false)
-    const { sendPasswordResetCode } = await import('../api')
-    await expect(sendPasswordResetCode('admin@test.com')).rejects.toThrow('Supabase non configuré')
+    const { setRecoveryCode } = await import('../api')
+    await expect(setRecoveryCode('A1B2C3D4')).rejects.toThrow('Supabase non configuré')
   })
 
-  it('verifyPasswordResetCode calls verifyOtp with type email', async () => {
-    const { verifyPasswordResetCode } = await import('../api')
+  it('setRecoveryCode throws the rpc error', async () => {
+    mockState.rpcFn.mockResolvedValueOnce({ data: null, error: new Error('Session invalide, reconnectez-vous.') })
+    const { setRecoveryCode } = await import('../api')
+    await expect(setRecoveryCode('A1B2C3D4')).rejects.toThrow('Session invalide, reconnectez-vous.')
+  })
+
+  it('recoverPassword calls rpc recover_admin_password with code and password', async () => {
+    const { recoverPassword } = await import('../api')
     const { supabase: s } = await import('../supabaseClient')
-    await verifyPasswordResetCode('admin@test.com', '123456', 'captcha-123')
-    expect(s.auth.verifyOtp).toHaveBeenCalledWith({
-      email: 'admin@test.com',
-      token: '123456',
-      type: 'email',
-      options: { captchaToken: 'captcha-123' },
+    await recoverPassword('A1B2C3D4', 'new-password')
+    expect(s.rpc).toHaveBeenCalledWith('recover_admin_password', {
+      recovery_code: 'A1B2C3D4',
+      new_password: 'new-password',
     })
   })
 
-  it('verifyPasswordResetCode returns the session', async () => {
-    const { verifyPasswordResetCode } = await import('../api')
-    const session = await verifyPasswordResetCode('admin@test.com', '123456')
-    expect(session).toEqual({ user: { id: '1' } })
+  it('recoverPassword returns true on success', async () => {
+    const { recoverPassword } = await import('../api')
+    await expect(recoverPassword('A1B2C3D4', 'new-password')).resolves.toBe(true)
   })
 
-  it('updateAdminPassword calls updateUser and signs out', async () => {
-    const { updateAdminPassword } = await import('../api')
-    const { supabase: s } = await import('../supabaseClient')
-    await updateAdminPassword('new-password')
-    expect(s.auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' })
-    expect(s.auth.signOut).toHaveBeenCalled()
+  it('recoverPassword throws the rpc error', async () => {
+    mockState.rpcFn.mockResolvedValueOnce({ data: null, error: new Error('Code de récupération invalide.') })
+    const { recoverPassword } = await import('../api')
+    await expect(recoverPassword('BADCODE', 'new-password')).rejects.toThrow('Code de récupération invalide.')
+  })
+
+  it('recoverPassword throws when not configured', async () => {
+    mockState.setConfigured(false)
+    const { recoverPassword } = await import('../api')
+    await expect(recoverPassword('A1B2C3D4', 'new-password')).rejects.toThrow('Supabase non configuré')
   })
 })
 

@@ -21,6 +21,7 @@ const iconMap = {
   MessageSquare: Lucide.MessageSquare,
   GraduationCap: Lucide.GraduationCap,
   Briefcase: Lucide.Briefcase,
+  Lock: Lucide.Lock,
 }
 
 const adminLinks = [
@@ -29,6 +30,7 @@ const adminLinks = [
   { label: 'Projets', href: '/admin?tab=projects', icon: 'FolderKanban' },
   { label: 'Expériences', href: '/admin?tab=experiences', icon: 'Briefcase' },
   { label: 'Messages', href: '/admin?tab=messages', icon: 'MessageSquare' },
+  { label: 'Sécurité', href: '/admin?tab=security', icon: 'Lock' },
 ]
 
 export default function Navbar() {

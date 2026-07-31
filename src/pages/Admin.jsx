@@ -19,6 +19,7 @@ import AdminMessages from './AdminMessages'
 import AdminExperiences from './AdminExperiences'
 import AdminProfile from './AdminProfile'
 import AdminSkills from './AdminSkills'
+import AdminSecurity from './AdminSecurity'
 import RichTextEditor from '../components/RichTextEditor'
 import ForgotPassword from './ForgotPassword'
 
@@ -386,6 +387,8 @@ export default function Admin() {
               {currentTab === 'profile' && <AdminProfile />}
 
               {currentTab === 'skills' && <AdminSkills />}
+
+              {currentTab === 'security' && <AdminSecurity />}
 
               {currentTab === 'projects' && (
                 <div className="space-y-6">
