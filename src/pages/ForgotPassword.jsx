@@ -27,7 +27,9 @@ const resetErrorToMessage = (err) => {
   }
   if (msg.includes('Supabase indisponible')) return msg
   if (msg.includes('Supabase non configuré')) return msg
-  return msg ? `Erreur : ${msg}` : 'Une erreur est survenue, réessayez.'
+  const status = err && err.status ? ` [${err.status}]` : ''
+  const code = err && err.code ? ` (${err.code})` : ''
+  return msg && msg !== '{}' ? `Erreur${status}${code} : ${msg}` : `Erreur serveur${status}, réessayez plus tard.`
 }
 
 export default function ForgotPassword({ onBack }) {
