@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Mail, KeyRound, Lock, ShieldCheck, Send } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, ShieldCheck, Send } from 'lucide-react'
 import {
   sendPasswordResetCode,
   verifyPasswordResetCode,
@@ -34,7 +34,9 @@ export default function ForgotPassword({ onBack }) {
   const { toast } = useToast()
   const [step, setStep] = useState('email')
   const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
+  const [digits, setDigits] = useState(['', '', '', '', '', ''])
+  const digitsRef = useRef(['', '', '', '', '', ''])
+  const digitRefs = useRef([])
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
@@ -79,15 +81,80 @@ export default function ForgotPassword({ onBack }) {
     captchaTokenRef.current = ''
   }
 
-  const verifyCode = async (e) => {
+  const setDigitsState = (next) => {
+    digitsRef.current = next
+    setDigits(next)
+  }
+
+  useEffect(() => {
+    if (step === 'code') {
+      setDigitsState(['', '', '', '', '', ''])
+      setTimeout(() => digitRefs.current[0]?.focus(), 0)
+    }
+  }, [step])
+
+  const handleDigitChange = (index, value) => {
+    const clean = value.replace(/\D/g, '')
+    if (!clean) return
+    const next = [...digitsRef.current]
+    clean.split('').forEach((d, i) => {
+      if (index + i < 6) next[index + i] = d
+    })
+    setDigitsState(next)
+    const target = index + clean.length
+    if (target < 6) {
+      digitRefs.current[target]?.focus()
+    } else if (next.every((d) => d !== '')) {
+      verifyCode()
+    }
+  }
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      if (digitsRef.current[index]) {
+        const next = [...digitsRef.current]
+        next[index] = ''
+        setDigitsState(next)
+      } else if (index > 0) {
+        const next = [...digitsRef.current]
+        next[index - 1] = ''
+        setDigitsState(next)
+        digitRefs.current[index - 1]?.focus()
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      digitRefs.current[index - 1]?.focus()
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      digitRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handlePaste = (e) => {
+    const clean = e.clipboardData.getData('text').replace(/\D/g, '')
+    if (!clean) return
     e.preventDefault()
-    if (code.replace(/\s/g, '').length !== 6) {
+    const next = [...digitsRef.current]
+    clean.split('').forEach((d, i) => {
+      if (i < 6) next[i] = d
+    })
+    setDigitsState(next)
+    if (clean.length >= 6 && next.every((d) => d !== '')) {
+      verifyCode()
+    } else {
+      digitRefs.current[Math.min(clean.length, 5)]?.focus()
+    }
+  }
+
+  const verifyCode = async (e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    const code = digitsRef.current.join('')
+    if (code.length !== 6) {
       toast.error('Le code doit contenir 6 chiffres.')
       return
     }
     setLoading(true)
     try {
-      await verifyPasswordResetCode(email, code.trim())
+      await verifyPasswordResetCode(email, code)
       setStep('password')
       toast.success('Code vérifié. Choisissez un nouveau mot de passe.')
     } catch (err) {
@@ -189,15 +256,20 @@ export default function ForgotPassword({ onBack }) {
                   <label htmlFor="reset-code" className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
                     Code à 6 chiffres
                   </label>
-                  <div className={fieldClass}>
-                    <KeyRound size={16} className="ml-4 shrink-0 text-gray-400" strokeWidth={1.75} />
-                    <input
-                      id="reset-code" type="text" inputMode="numeric" autoComplete="one-time-code" required
-                      maxLength={6} pattern="[0-9]{6}" placeholder="••••••"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                      className={`${inputClass} tracking-[0.5em]`}
-                    />
+                  <div className="grid grid-cols-6 gap-2" onPaste={handlePaste}>
+                    {digits.map((d, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { digitRefs.current[i] = el }}
+                        id={i === 0 ? 'reset-code' : undefined}
+                        type="text" inputMode="numeric" autoComplete={i === 0 ? 'one-time-code' : 'off'} required
+                        maxLength={6} aria-label={`Chiffre ${i + 1}`}
+                        value={d}
+                        onChange={(e) => handleDigitChange(i, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                        className="w-full rounded-xl border border-accent/20 bg-[#FFF8F5] px-0 py-3 text-center font-display text-xl font-bold text-gray-900 outline-none shadow-sm shadow-accent/5 transition duration-200 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/20 dark:border-accent/25 dark:bg-[#18181C] dark:text-white dark:focus:border-accent dark:focus:bg-[#1E1E22] dark:focus:ring-accent/25"
+                      />
+                    ))}
                   </div>
                   <p className="mt-2 text-center text-xs text-muted-light dark:text-muted-dark">
                     Code envoyé à <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span>
