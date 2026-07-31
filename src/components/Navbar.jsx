@@ -97,7 +97,7 @@ export default function Navbar() {
             <Logo alt={isAdmin ? 'Admin' : profileName} className="h-9 w-auto" />
           </Link>
 
-          <ul className="hidden items-center gap-8 md:flex">
+          <ul className="hidden items-center gap-6 md:flex xl:gap-8">
             {(isAdmin ? adminLinks : navLinks).map((link) => {
               const active = isAdmin
                 ? currentTab === link.href.split('tab=')[1]

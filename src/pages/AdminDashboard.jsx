@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { FolderKanban, Star, MessageSquare, GraduationCap, Briefcase, Mail, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { FolderKanban, Star, MessageSquare, GraduationCap, Briefcase, Mail, ArrowRight, KeyRound } from 'lucide-react'
 import { fetchProjects, fetchExperiences, fetchMessages } from '../lib/api'
 
 const statCards = [
@@ -183,6 +184,26 @@ export default function AdminDashboard({ onNavigate }) {
           <StatCard key={card.key} {...card} value={stats[card.key]} index={i} />
         ))}
       </div>
+
+      <Link
+        to="/admin?tab=security"
+        className="group flex items-center justify-between gap-4 rounded-2xl border border-accent/20 bg-accent/[0.03] p-4 shadow-sm transition hover:border-accent/40 hover:bg-accent/[0.06] sm:p-5"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <KeyRound size={18} strokeWidth={1.75} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Code de récupération</p>
+            <p className="text-xs text-muted-light dark:text-muted-dark">
+              Gérer votre code « Mot de passe oublié » — aucun email nécessaire.
+            </p>
+          </div>
+        </div>
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent transition group-hover:bg-accent group-hover:text-white">
+          <ArrowRight size={15} />
+        </span>
+      </Link>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <RecentMessages messages={messages} />
