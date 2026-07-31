@@ -270,9 +270,14 @@ export async function sendPasswordResetCode(email, captchaToken) {
   return true
 }
 
-export async function verifyPasswordResetCode(email, token) {
+export async function verifyPasswordResetCode(email, token, captchaToken) {
   if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
-  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
+    options: { captchaToken },
+  })
   if (error) throw error
   return data.session
 }

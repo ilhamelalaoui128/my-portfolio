@@ -361,11 +361,12 @@ describe('password reset (sendPasswordResetCode / verifyPasswordResetCode / upda
   it('verifyPasswordResetCode calls verifyOtp with type email', async () => {
     const { verifyPasswordResetCode } = await import('../api')
     const { supabase: s } = await import('../supabaseClient')
-    await verifyPasswordResetCode('admin@test.com', '123456')
+    await verifyPasswordResetCode('admin@test.com', '123456', 'captcha-123')
     expect(s.auth.verifyOtp).toHaveBeenCalledWith({
       email: 'admin@test.com',
       token: '123456',
       type: 'email',
+      options: { captchaToken: 'captcha-123' },
     })
   })
 

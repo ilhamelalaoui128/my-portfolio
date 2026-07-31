@@ -45,6 +45,11 @@ export default function ForgotPassword({ onBack }) {
   const [captchaVisible, setCaptchaVisible] = useState(false)
   const captchaTokenRef = useRef('')
   const autoSubmitRef = useRef(false)
+  const [codeCaptchaToken, setCodeCaptchaToken] = useState('')
+  const [codeCaptchaKey, setCodeCaptchaKey] = useState(0)
+  const [codeCaptchaVisible, setCodeCaptchaVisible] = useState(false)
+  const codeCaptchaTokenRef = useRef('')
+  const codeAutoSubmitRef = useRef(false)
 
   const sendCode = async (e) => {
     if (e && e.preventDefault) e.preventDefault()
@@ -152,16 +157,36 @@ export default function ForgotPassword({ onBack }) {
       toast.error('Le code doit contenir 6 chiffres.')
       return
     }
+    if (TURNSTILE_SITE_KEY && !codeCaptchaTokenRef.current) {
+      codeAutoSubmitRef.current = true
+      setCodeCaptchaVisible(true)
+      return
+    }
+    codeAutoSubmitRef.current = false
     setLoading(true)
     try {
-      await verifyPasswordResetCode(email, code)
+      await verifyPasswordResetCode(email, code, codeCaptchaTokenRef.current)
       setStep('password')
       toast.success('Code vérifié. Choisissez un nouveau mot de passe.')
     } catch (err) {
       toast.error(resetErrorToMessage(err))
+      setCodeCaptchaToken('')
+      codeCaptchaTokenRef.current = ''
+      setCodeCaptchaKey((k) => k + 1)
     } finally {
       setLoading(false)
     }
+  }
+
+  const onCodeCaptchaToken = (token) => {
+    setCodeCaptchaToken(token)
+    codeCaptchaTokenRef.current = token
+    if (codeAutoSubmitRef.current) verifyCode()
+  }
+
+  const onCodeCaptchaReset = () => {
+    setCodeCaptchaToken('')
+    codeCaptchaTokenRef.current = ''
   }
 
   const updatePassword = async (e) => {
@@ -271,6 +296,22 @@ export default function ForgotPassword({ onBack }) {
                       />
                     ))}
                   </div>
+
+                  {codeCaptchaVisible && TURNSTILE_SITE_KEY && (
+                    <div className="mt-3">
+                      <TurnstileCaptcha
+                        key={codeCaptchaKey}
+                        onToken={onCodeCaptchaToken}
+                        onExpired={onCodeCaptchaReset}
+                        onError={onCodeCaptchaReset}
+                      />
+                      {!codeCaptchaToken && (
+                        <p className="mt-1.5 text-center text-xs text-muted-light dark:text-muted-dark">
+                          Résolvez le captcha pour continuer.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <p className="mt-2 text-center text-xs text-muted-light dark:text-muted-dark">
                     Code envoyé à <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span>
                   </p>
@@ -335,6 +376,9 @@ export default function ForgotPassword({ onBack }) {
                     setCaptchaToken('')
                     captchaTokenRef.current = ''
                     setCaptchaVisible(false)
+                    setCodeCaptchaToken('')
+                    codeCaptchaTokenRef.current = ''
+                    setCodeCaptchaVisible(false)
                     setStep('email')
                   }}
                   className="font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
