@@ -318,7 +318,7 @@ export default function Admin() {
                   <button
                     type="button"
                     onClick={() => setShowForgot(true)}
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
+                    className="mt-2 inline-flex w-full items-center justify-end gap-1 text-xs font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
                   >
                     Mot de passe oublié ?
                   </button>
