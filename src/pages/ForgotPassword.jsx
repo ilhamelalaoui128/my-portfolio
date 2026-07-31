@@ -31,7 +31,7 @@ const resetErrorToMessage = (err) => {
 }
 
 export default function ForgotPassword({ onBack }) {
-  const { toast } = useToast()
+  const toast = useToast()
   const [step, setStep] = useState('email')
   const [email, setEmail] = useState('')
   const [digits, setDigits] = useState(['', '', '', '', '', ''])
