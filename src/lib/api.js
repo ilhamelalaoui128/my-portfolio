@@ -257,6 +257,34 @@ export async function getSession() {
   return data.session
 }
 
+export async function sendPasswordResetCode(email) {
+  if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
+  if (!(await ensureSupabaseReady())) {
+    throw new Error('Supabase indisponible, réessayez dans un instant.')
+  }
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false },
+  })
+  if (error) throw error
+  return true
+}
+
+export async function verifyPasswordResetCode(email, token) {
+  if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  if (error) throw error
+  return data.session
+}
+
+export async function updateAdminPassword(password) {
+  if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) throw error
+  await supabase.auth.signOut()
+  return true
+}
+
 export async function uploadImage(file) {
   const toDataURL = () => new Promise((resolve) => {
     const reader = new FileReader()

@@ -26,6 +26,9 @@ const mockState = vi.hoisted(() => {
   const fromFn = vi.fn(() => buildQuery())
   const authObj = {
     signInWithPassword: vi.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
+    signInWithOtp: vi.fn().mockResolvedValue({ data: {}, error: null }),
+    verifyOtp: vi.fn().mockResolvedValue({ data: { session: { user: { id: '1' } } }, error: null }),
+    updateUser: vi.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
     getSession: vi.fn().mockResolvedValue({ data: { session: { user: { id: '1' } } } }),
   }
@@ -71,6 +74,9 @@ beforeEach(() => {
   mockState.setQueryResult({ data: [], error: null })
   mockState.fromFn.mockClear()
   mockState.authObj.signInWithPassword.mockClear()
+  mockState.authObj.signInWithOtp.mockClear()
+  mockState.authObj.verifyOtp.mockClear()
+  mockState.authObj.updateUser.mockClear()
   mockState.authObj.signOut.mockClear()
   mockState.authObj.getSession.mockClear()
   mockState.uploadFn.mockClear()
@@ -332,6 +338,49 @@ describe('signInAdmin / signOutAdmin / getSession', () => {
     const { getSession } = await import('../api')
     const session = await getSession()
     expect(session).toBeNull()
+  })
+})
+
+describe('password reset (sendPasswordResetCode / verifyPasswordResetCode / updateAdminPassword)', () => {
+  it('sendPasswordResetCode calls signInWithOtp without creating a user', async () => {
+    const { sendPasswordResetCode } = await import('../api')
+    const { supabase: s } = await import('../supabaseClient')
+    await sendPasswordResetCode('admin@test.com')
+    expect(s.auth.signInWithOtp).toHaveBeenCalledWith({
+      email: 'admin@test.com',
+      options: { shouldCreateUser: false },
+    })
+  })
+
+  it('sendPasswordResetCode throws when not configured', async () => {
+    mockState.setConfigured(false)
+    const { sendPasswordResetCode } = await import('../api')
+    await expect(sendPasswordResetCode('admin@test.com')).rejects.toThrow('Supabase non configuré')
+  })
+
+  it('verifyPasswordResetCode calls verifyOtp with type email', async () => {
+    const { verifyPasswordResetCode } = await import('../api')
+    const { supabase: s } = await import('../supabaseClient')
+    await verifyPasswordResetCode('admin@test.com', '123456')
+    expect(s.auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'admin@test.com',
+      token: '123456',
+      type: 'email',
+    })
+  })
+
+  it('verifyPasswordResetCode returns the session', async () => {
+    const { verifyPasswordResetCode } = await import('../api')
+    const session = await verifyPasswordResetCode('admin@test.com', '123456')
+    expect(session).toEqual({ user: { id: '1' } })
+  })
+
+  it('updateAdminPassword calls updateUser and signs out', async () => {
+    const { updateAdminPassword } = await import('../api')
+    const { supabase: s } = await import('../supabaseClient')
+    await updateAdminPassword('new-password')
+    expect(s.auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' })
+    expect(s.auth.signOut).toHaveBeenCalled()
   })
 })
 

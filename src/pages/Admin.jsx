@@ -20,6 +20,7 @@ import AdminExperiences from './AdminExperiences'
 import AdminProfile from './AdminProfile'
 import AdminSkills from './AdminSkills'
 import RichTextEditor from '../components/RichTextEditor'
+import ForgotPassword from './ForgotPassword'
 
 const emptyForm = {
   title: '', description: '', content: '', stack: '',
@@ -55,6 +56,7 @@ export default function Admin() {
   const [captchaVisible, setCaptchaVisible] = useState(false)
   const captchaTokenRef = useRef('')
   const autoSubmitRef = useRef(false)
+  const [showForgot, setShowForgot] = useState(false)
   const [projects, setProjects] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -258,6 +260,9 @@ export default function Admin() {
           Retour au site
         </Link>
 
+        {showForgot ? (
+          <ForgotPassword onBack={() => setShowForgot(false)} />
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -310,6 +315,13 @@ export default function Admin() {
                       className="w-full bg-transparent py-2.5 pl-3 pr-4 text-gray-900 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgot(true)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
+                  >
+                    Mot de passe oublié ?
+                  </button>
                 </div>
 
                 {captchaVisible && TURNSTILE_SITE_KEY && (
@@ -347,6 +359,7 @@ export default function Admin() {
             </div>
           </form>
         </motion.div>
+        )}
       </div>
     )
   }
