@@ -257,14 +257,14 @@ export async function getSession() {
   return data.session
 }
 
-export async function sendPasswordResetCode(email) {
+export async function sendPasswordResetCode(email, captchaToken) {
   if (!isSupabaseConfigured) throw new Error('Supabase non configuré')
   if (!(await ensureSupabaseReady())) {
     throw new Error('Supabase indisponible, réessayez dans un instant.')
   }
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false },
+    options: { shouldCreateUser: false, captchaToken },
   })
   if (error) throw error
   return true

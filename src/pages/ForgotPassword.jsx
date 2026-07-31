@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Mail, KeyRound, Lock, ShieldCheck, Send } from 'lucide-react'
 import {
@@ -7,6 +7,7 @@ import {
   updateAdminPassword,
 } from '../lib/api'
 import { useToast } from '../components/Toast'
+import TurnstileCaptcha, { TURNSTILE_SITE_KEY } from '../components/TurnstileCaptcha'
 
 const fieldClass =
   'flex items-center rounded-xl border border-accent/20 bg-[#FFF8F5] shadow-sm shadow-accent/5 transition duration-200 focus-within:border-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-accent/20 dark:border-accent/25 dark:bg-[#18181C] dark:focus-within:border-accent dark:focus-within:bg-[#1E1E22] dark:focus-within:ring-accent/25'
@@ -15,6 +16,9 @@ const inputClass =
 
 const resetErrorToMessage = (err) => {
   const msg = (err && err.message) || ''
+  if (msg.toLowerCase().includes('captcha')) {
+    return 'Captcha invalide ou expiré, réessayez.'
+  }
   if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('too many')) {
     return 'Trop de tentatives. Attendez quelques minutes puis réessayez.'
   }
@@ -34,19 +38,45 @@ export default function ForgotPassword({ onBack }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaKey, setCaptchaKey] = useState(0)
+  const [captchaVisible, setCaptchaVisible] = useState(false)
+  const captchaTokenRef = useRef('')
+  const autoSubmitRef = useRef(false)
 
   const sendCode = async (e) => {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
+    if (step !== 'email') return
+    if (TURNSTILE_SITE_KEY && !captchaTokenRef.current) {
+      autoSubmitRef.current = true
+      setCaptchaVisible(true)
+      return
+    }
+    autoSubmitRef.current = false
     setLoading(true)
     try {
-      await sendPasswordResetCode(email)
+      await sendPasswordResetCode(email, captchaTokenRef.current)
       setStep('code')
       toast.success('Code envoyé. Vérifiez votre boîte mail.')
     } catch (err) {
       toast.error(resetErrorToMessage(err))
+      setCaptchaToken('')
+      captchaTokenRef.current = ''
+      setCaptchaKey((k) => k + 1)
     } finally {
       setLoading(false)
     }
+  }
+
+  const onCaptchaToken = (token) => {
+    setCaptchaToken(token)
+    captchaTokenRef.current = token
+    if (autoSubmitRef.current) sendCode()
+  }
+
+  const onCaptchaReset = () => {
+    setCaptchaToken('')
+    captchaTokenRef.current = ''
   }
 
   const verifyCode = async (e) => {
@@ -135,6 +165,22 @@ export default function ForgotPassword({ onBack }) {
                       className={inputClass}
                     />
                   </div>
+
+                  {captchaVisible && TURNSTILE_SITE_KEY && (
+                    <div className="mt-3">
+                      <TurnstileCaptcha
+                        key={captchaKey}
+                        onToken={onCaptchaToken}
+                        onExpired={onCaptchaReset}
+                        onError={onCaptchaReset}
+                      />
+                      {!captchaToken && (
+                        <p className="mt-1.5 text-center text-xs text-muted-light dark:text-muted-dark">
+                          Résolvez le captcha pour continuer.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -213,7 +259,12 @@ export default function ForgotPassword({ onBack }) {
               {step === 'code' && (
                 <button
                   type="button"
-                  onClick={() => setStep('email')}
+                  onClick={() => {
+                    setCaptchaToken('')
+                    captchaTokenRef.current = ''
+                    setCaptchaVisible(false)
+                    setStep('email')
+                  }}
                   className="font-medium text-muted-light transition hover:text-accent dark:text-muted-dark"
                 >
                   Changer d'email

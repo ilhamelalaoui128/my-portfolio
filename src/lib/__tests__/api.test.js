@@ -345,10 +345,10 @@ describe('password reset (sendPasswordResetCode / verifyPasswordResetCode / upda
   it('sendPasswordResetCode calls signInWithOtp without creating a user', async () => {
     const { sendPasswordResetCode } = await import('../api')
     const { supabase: s } = await import('../supabaseClient')
-    await sendPasswordResetCode('admin@test.com')
+    await sendPasswordResetCode('admin@test.com', 'captcha-123')
     expect(s.auth.signInWithOtp).toHaveBeenCalledWith({
       email: 'admin@test.com',
-      options: { shouldCreateUser: false },
+      options: { shouldCreateUser: false, captchaToken: 'captcha-123' },
     })
   })
 
