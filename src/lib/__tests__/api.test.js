@@ -120,12 +120,12 @@ describe('fetchProjects()', () => {
     expect(result).toEqual(projectsData)
   })
 
-  it('pings health endpoint with apikey header before fetching', async () => {
+  it('pings PostgREST readiness endpoint with apikey header before fetching', async () => {
     mockState.setQueryResult({ data: [{ id: '1' }], error: null })
     const { fetchProjects } = await import('../api')
     await fetchProjects()
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://project.supabase.co/auth/v1/health',
+      'https://project.supabase.co/rest/v1/settings?select=key&limit=1',
       expect.objectContaining({
         headers: expect.objectContaining({
           apikey: 'test-anon-key',

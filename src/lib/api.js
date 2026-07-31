@@ -87,7 +87,7 @@ async function ensureSupabaseReady() {
       const deadline = Date.now() + 15000
       while (Date.now() < deadline) {
         try {
-          const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
+          const res = await fetch(`${supabaseUrl}/rest/v1/settings?select=key&limit=1`, {
             headers: {
               apikey: supabaseAnonKey,
               Authorization: `Bearer ${supabaseAnonKey}`,
