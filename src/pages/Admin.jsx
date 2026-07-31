@@ -33,6 +33,17 @@ const fileToBase64 = (file) =>
     reader.readAsDataURL(file)
   })
 
+const loginErrorToMessage = (err) => {
+  const msg = (err && err.message) || ''
+  if (msg.includes('Invalid login credentials')) return 'Email ou mot de passe incorrect.'
+  if (msg.toLowerCase().includes('email not confirmed')) return 'Email non confirmé. Vérifiez votre boîte mail.'
+  if (msg.toLowerCase().includes('captcha')) return 'Captcha invalide ou expiré, réessayez.'
+  if (msg.toLowerCase().includes('too many') || msg.toLowerCase().includes('rate limit')) return 'Trop de tentatives. Attendez quelques minutes puis réessayez.'
+  if (msg.includes('Supabase indisponible')) return 'Supabase indisponible, réessayez dans un instant.'
+  if (msg.includes('Supabase non configuré')) return 'Supabase non configuré.'
+  return msg || 'Erreur lors de la connexion.'
+}
+
 export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentTab = searchParams.get('tab') || 'dashboard'
@@ -101,8 +112,8 @@ export default function Admin() {
     setLoading(true)
     try {
       await signIn(login.email, login.password, captchaToken)
-    } catch {
-      toast.error('Identifiants incorrects.')
+    } catch (err) {
+      toast.error(loginErrorToMessage(err))
       setCaptchaToken('')
       setCaptchaKey((k) => k + 1)
     } finally {

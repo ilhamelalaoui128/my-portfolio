@@ -19,8 +19,8 @@ export function AdminAuthProvider({ children }) {
     })
   }, [])
 
-  const signIn = useCallback(async (email, password) => {
-    const s = await signInAdmin(email, password)
+  const signIn = useCallback(async (email, password, captchaToken) => {
+    const s = await signInAdmin(email, password, captchaToken)
     setSession(s)
     return s
   }, [])
