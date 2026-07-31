@@ -49,13 +49,16 @@ const mockState = vi.hoisted(() => {
   }
 })
 
+const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+
 vi.mock('../supabaseClient', () => ({
   supabaseUrl: 'https://project.supabase.co',
+  supabaseAnonKey: 'test-anon-key',
   get isSupabaseConfigured() { return mockState.configured },
   supabase: mockState.supabase,
 }))
 
-vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+vi.stubGlobal('fetch', mockFetch)
 
 vi.stubGlobal('crypto', {
   randomUUID: vi.fn(() => '00000000-0000-0000-0000-000000000000'),
@@ -63,6 +66,7 @@ vi.stubGlobal('crypto', {
 
 beforeEach(() => {
   vi.resetModules()
+  mockFetch.mockClear()
   mockState.setConfigured(true)
   mockState.setQueryResult({ data: [], error: null })
   mockState.fromFn.mockClear()
@@ -114,6 +118,21 @@ describe('fetchProjects()', () => {
     const { fetchProjects } = await import('../api')
     const result = await fetchProjects()
     expect(result).toEqual(projectsData)
+  })
+
+  it('pings health endpoint with apikey header before fetching', async () => {
+    mockState.setQueryResult({ data: [{ id: '1' }], error: null })
+    const { fetchProjects } = await import('../api')
+    await fetchProjects()
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://project.supabase.co/auth/v1/health',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          apikey: 'test-anon-key',
+          Authorization: 'Bearer test-anon-key',
+        }),
+      })
+    )
   })
 
   it('returns fallback projects when Supabus returns empty', async () => {

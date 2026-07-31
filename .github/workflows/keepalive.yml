@@ -12,4 +12,6 @@ jobs:
       - name: Ping Supabase health endpoint
         run: |
           curl -fsS -o /dev/null -w "Supabase health: %{http_code}\n" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             "https://mctiewwjpnxxpnkyqiit.supabase.co/auth/v1/health"

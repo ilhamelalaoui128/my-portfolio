@@ -1,4 +1,4 @@
-import { supabase, supabaseUrl, isSupabaseConfigured } from './supabaseClient'
+import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from './supabaseClient'
 
 export const fallbackProfile = {
   name: 'Ilham',
@@ -87,7 +87,12 @@ async function ensureSupabaseReady() {
       const deadline = Date.now() + 15000
       while (Date.now() < deadline) {
         try {
-          const res = await fetch(`${supabaseUrl}/auth/v1/health`)
+          const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
+            headers: {
+              apikey: supabaseAnonKey,
+              Authorization: `Bearer ${supabaseAnonKey}`,
+            },
+          })
           if (res.ok) return true
         } catch {}
         await new Promise((r) => setTimeout(r, 3000))
