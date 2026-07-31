@@ -7,6 +7,7 @@ import { usePortfolioData } from '../context/PortfolioDataContext'
 import ThemeToggle from './ThemeToggle'
 import CvDownloadButton from './CvDownloadButton'
 import MobileMenu from './MobileMenu'
+import Logo from './Logo'
 import { useActiveSection, linkClass } from '../hooks/useActiveSection'
 
 const iconMap = {
@@ -88,10 +89,10 @@ export default function Navbar() {
         >
           <Link
             to={isAdmin ? '/admin' : '/'}
-            className="font-display text-lg font-bold tracking-tight text-gray-900 dark:text-white"
+            className="flex items-center"
+            aria-label={isAdmin ? 'Admin' : profileName}
           >
-            {isAdmin ? 'Admin' : profileName}
-            <span className="text-accent">.</span>
+            <Logo alt={isAdmin ? 'Admin' : profileName} className="h-9 w-auto" />
           </Link>
 
           <ul className="hidden items-center gap-8 md:flex">

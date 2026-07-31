@@ -34,7 +34,7 @@ describe('Footer', () => {
         <Footer />
       </MemoryRouter>
     )
-    expect(screen.getByText(/Ilham El-Alaoui/)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Ilham El-Alaoui' })).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toHaveAttribute('href', 'mailto:test@test.com')
     expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', 'https://github.com/test')
     expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', 'https://linkedin.com/in/test')
@@ -47,7 +47,7 @@ describe('Footer', () => {
         <Footer />
       </MemoryRouter>
     )
-    expect(screen.getByText(/Ilham/)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Ilham' })).toBeInTheDocument()
   })
 
   it('uses fallback LinkedIn URL when not in profile', () => {

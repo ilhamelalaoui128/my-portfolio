@@ -1,5 +1,6 @@
 import { Github, Linkedin, Heart, Mail } from 'lucide-react'
 import SectionDivider from './SectionDivider'
+import Logo from './Logo'
 import { usePortfolioData } from '../context/PortfolioDataContext'
 
 export default function Footer() {
@@ -15,10 +16,7 @@ export default function Footer() {
       <div className="container-narrow px-5 sm:px-8 lg:px-16">
         <div className="flex flex-col items-center justify-between gap-6 pb-10 sm:flex-row">
           <div className="text-center sm:text-left">
-            <p className="font-display text-lg font-bold text-gray-900 dark:text-white">
-              {profile.fullName || profile.name}
-              <span className="text-accent">.</span>
-            </p>
+            <Logo alt={profile.fullName || profile.name} className="mx-auto h-11 w-auto sm:mx-0" />
             <p className="mt-1 flex items-center justify-center gap-1 text-sm text-muted-light dark:text-muted-dark sm:justify-start">
               Fait avec <Heart size={13} className="text-accent" /> en {year}
             </p>

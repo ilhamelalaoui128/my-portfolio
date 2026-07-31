@@ -5,6 +5,7 @@ import * as Lucide from 'lucide-react'
 import { navLinks } from '../lib/data'
 import ThemeToggle from './ThemeToggle'
 import CvDownloadButton from './CvDownloadButton'
+import Logo from './Logo'
 import { mobileLinkClass } from '../hooks/useActiveSection'
 import { useTheme } from '../hooks/useTheme'
 
@@ -76,10 +77,7 @@ export default function MobileMenu({ open, onClose, linkHref, isLinkActive, isAd
             className="fixed right-0 top-0 z-[70] flex h-full w-[min(100%,18.5rem)] flex-col border-l border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-surface-dark md:hidden"
           >
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-              <p className="font-display text-lg font-bold text-gray-900 dark:text-white">
-                Menu
-                <span className="text-accent">.</span>
-              </p>
+              <Logo alt="Menu" className="h-8 w-auto" />
               <button
                 type="button"
                 onClick={onClose}

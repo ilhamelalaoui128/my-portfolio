@@ -51,12 +51,14 @@ describe('Navbar', () => {
 
   it('renders profile name as logo on home page', () => {
     renderNavbar('/')
-    expect(screen.getByText(/Ilham El-Alaoui/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ilham El-Alaoui' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Ilham El-Alaoui' })).toBeInTheDocument()
   })
 
   it('renders Admin as logo on admin page', () => {
     renderNavbar('/admin')
-    expect(screen.getByText('Admin')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Admin' })).toBeInTheDocument()
   })
 
   it('renders nav links on home page', () => {
