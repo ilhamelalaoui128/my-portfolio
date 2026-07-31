@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -53,6 +53,8 @@ export default function Admin() {
   const [captchaToken, setCaptchaToken] = useState('')
   const [captchaKey, setCaptchaKey] = useState(0)
   const [captchaVisible, setCaptchaVisible] = useState(false)
+  const captchaTokenRef = useRef('')
+  const autoSubmitRef = useRef(false)
   const [projects, setProjects] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -104,21 +106,35 @@ export default function Admin() {
   }
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
+    if (e && e.preventDefault) e.preventDefault()
+    if (TURNSTILE_SITE_KEY && !captchaTokenRef.current) {
+      autoSubmitRef.current = true
       setCaptchaVisible(true)
       return
     }
+    autoSubmitRef.current = false
     setLoading(true)
     try {
-      await signIn(login.email, login.password, captchaToken)
+      await signIn(login.email, login.password, captchaTokenRef.current)
     } catch (err) {
       toast.error(loginErrorToMessage(err))
       setCaptchaToken('')
+      captchaTokenRef.current = ''
       setCaptchaKey((k) => k + 1)
     } finally {
       setLoading(false)
     }
+  }
+
+  const onCaptchaToken = (token) => {
+    setCaptchaToken(token)
+    captchaTokenRef.current = token
+    if (autoSubmitRef.current) handleLogin()
+  }
+
+  const onCaptchaReset = () => {
+    setCaptchaToken('')
+    captchaTokenRef.current = ''
   }
 
   const openForm = useCallback((project = null) => {
@@ -300,9 +316,9 @@ export default function Admin() {
                   <div>
                     <TurnstileCaptcha
                       key={captchaKey}
-                      onToken={setCaptchaToken}
-                      onExpired={() => setCaptchaToken('')}
-                      onError={() => setCaptchaToken('')}
+                      onToken={onCaptchaToken}
+                      onExpired={onCaptchaReset}
+                      onError={onCaptchaReset}
                     />
                     {!captchaToken && (
                       <p className="mt-1.5 text-center text-xs text-muted-light dark:text-muted-dark">
